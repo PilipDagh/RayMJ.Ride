@@ -1,0 +1,6 @@
+{
+  "name": "Soft-Body Sim",
+  "description": "AAA Soft-Body Vehicle Physics & Dynamics Engine (BeamNG architecture) with 10 vehicles, 5 proving grounds, procedural 3D synthesis, and Gemini AI Pit Crew telemetry.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

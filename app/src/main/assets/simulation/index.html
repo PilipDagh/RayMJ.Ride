@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>BeamNG.drive Architecture Soft-Body Simulation</title>
+  <link rel="stylesheet" href="./styles/ui.css">
+</head>
+<body>
+  <!-- 3D WebGL Canvas Layer -->
+  <div id="canvas-container"></div>
+
+  <!-- Interactive Node Grabber Cursor -->
+  <div id="grabber-cursor"></div>
+
+  <!-- Toast Notifications -->
+  <div id="toast-container"></div>
+
+  <!-- MAIN MENU MODAL SCREEN -->
+  <div id="main-menu-overlay" class="menu-overlay">
+    <div class="main-menu-card">
+      <div class="menu-brand">
+        <div class="menu-logo-tag">BEAMNG ARCHITECTURE 1:1</div>
+        <h1 class="menu-title">SOFT-BODY DYNAMICS</h1>
+        <p class="menu-subtitle">2000Hz Viscoelastic Solver &bull; Pacejka '96 &bull; WebGL2 PBR Shaders</p>
+      </div>
+
+      <div class="menu-actions">
+        <button class="menu-btn primary-btn" id="menu-btn-play">
+          <span class="btn-icon">▶</span>
+          <span class="btn-text">DRIVE NOW</span>
+        </button>
+        <button class="menu-btn" id="menu-btn-vehicles">
+          <span class="btn-icon">🚗</span>
+          <span class="btn-text">VEHICLES (10)</span>
+        </button>
+        <button class="menu-btn" id="menu-btn-maps">
+          <span class="btn-icon">🗺️</span>
+          <span class="btn-text">MAPS & PROVING GROUNDS</span>
+        </button>
+        <button class="menu-btn" id="menu-btn-photo">
+          <span class="btn-icon">📸</span>
+          <span class="btn-text">DAMAGE PHOTOGRAPHY</span>
+        </button>
+        <button class="menu-btn" id="menu-btn-settings">
+          <span class="btn-icon">⚙️</span>
+          <span class="btn-text">GRAPHICS & SETTINGS</span>
+        </button>
+      </div>
+
+      <div class="menu-footer">
+        <span>Press ESC anytime to open menu &bull; Android Landscape Mode Active</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Simulation HUD Overlay -->
+  <div id="hud-overlay">
+    <!-- Top Bar: Brand, Model & Global Toggles -->
+    <div class="hud-top-bar">
+      <div class="brand-badge">
+        <span class="brand-title" id="hud-brand-title">PORSCHE 911 GT3 (992)</span>
+        <span class="vehicle-subname" id="hud-vehicle-sub">4.0L NA Boxer-6 | 502 HP | 9,000 RPM</span>
+      </div>
+
+      <div class="top-actions">
+        <button class="hud-btn" id="btn-top-menu">
+          <span>☰</span> Menu
+        </button>
+        <button class="hud-btn" id="btn-top-photo">
+          <span>📸</span> Photo
+        </button>
+        <button class="hud-btn" id="btn-top-replay">
+          <span>📼</span> Replay
+        </button>
+        <button class="hud-btn" id="btn-top-weather">
+          <span>🌦️</span> Weather
+        </button>
+        <button class="hud-btn" id="btn-top-vehicles">
+          <span>🚗</span> Cars
+        </button>
+        <button class="hud-btn" id="btn-top-maps">
+          <span>🗺️</span> Maps
+        </button>
+        <button class="hud-btn" id="btn-top-settings">
+          <span>⚙️</span> Graphics
+        </button>
+        <button class="hud-btn" id="btn-top-reset">
+          <span>🔄</span> Reset (R)
+        </button>
+      </div>
+    </div>
+
+    <!-- REPLAY TIMELINE BAR (VISIBLE WHEN REPLAY OPEN) -->
+    <div id="replay-bar" class="replay-floating-bar" style="display: none;">
+      <button class="hud-btn-mini" id="replay-btn-record">⏺ Rec</button>
+      <button class="hud-btn-mini" id="replay-btn-play">▶ Play</button>
+      <button class="hud-btn-mini" id="replay-btn-pause">⏸ Pause</button>
+      <button class="hud-btn-mini" id="replay-btn-live">⚡ Live</button>
+      <input type="range" class="replay-slider" id="replay-scrubber" min="0" max="1" step="0.005" value="1">
+      <span class="replay-time-text" id="replay-time-text">0.0s / 0.0s</span>
+      <select class="hud-select-mini" id="replay-speed-select">
+        <option value="0.1">0.1x Slow</option>
+        <option value="0.25">0.25x Slow</option>
+        <option value="0.5">0.5x Slow</option>
+        <option value="1.0" selected>1.0x Normal</option>
+        <option value="2.0">2.0x Fast</option>
+      </select>
+      <button class="hud-btn-mini" id="replay-btn-save">💾 Save</button>
+    </div>
+
+    <!-- DAMAGE PHOTOGRAPHY HUD (VISIBLE IN PHOTO MODE) -->
+    <div id="photo-mode-bar" class="photo-floating-bar" style="display: none;">
+      <div class="photo-controls-group">
+        <span class="photo-label">FOV:</span>
+        <input type="range" class="photo-slider" id="photo-fov-slider" min="20" max="90" value="45">
+        <span id="photo-fov-val" class="photo-val">45°</span>
+      </div>
+      <div class="photo-controls-group">
+        <span class="photo-label">Filter:</span>
+        <select class="hud-select-mini" id="photo-filter-select">
+          <option value="none">Standard Clean</option>
+          <option value="hdr_contrast">HDR Punchy</option>
+          <option value="cyberpunk">Cyberpunk Neon</option>
+          <option value="warm_vintage">Warm Vintage</option>
+          <option value="monochrome">Dramatic B&W</option>
+        </select>
+      </div>
+      <div class="photo-controls-group">
+        <span class="photo-label">Exposure:</span>
+        <input type="range" class="photo-slider" id="photo-exposure-slider" min="0.5" max="2.0" step="0.05" value="1.05">
+      </div>
+      <button class="hud-btn primary-hud-btn" id="photo-btn-snap">
+        <span>📸</span> Capture PNG
+      </button>
+      <button class="hud-btn" id="photo-btn-exit">✕ Exit Photo</button>
+    </div>
+
+    <!-- Bottom Cluster: Telemetry, Center Tach/Speedometer, Tire Status -->
+    <div class="hud-bottom-cluster" id="hud-bottom-cluster">
+      <!-- Left: Dynamic Telemetry & AI Pit Crew -->
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div class="telemetry-card">
+          <div class="telemetry-row">
+            <span>ACCEL / G-FORCE</span>
+            <span class="telemetry-val" id="telemetry-gforce">1.00 G</span>
+          </div>
+          <div class="telemetry-row">
+            <span>TURBO BOOST</span>
+            <span class="telemetry-val" id="telemetry-boost">0.0 PSI</span>
+          </div>
+          <div class="telemetry-row">
+            <span>COOLANT TEMP</span>
+            <span class="telemetry-val" id="telemetry-temp">90 °C</span>
+          </div>
+          <div class="telemetry-row">
+            <span>BEAM INTEGRITY</span>
+            <span class="telemetry-val" id="telemetry-damage">Nominal</span>
+          </div>
+        </div>
+
+        <!-- AI Pit Crew Broadcast -->
+        <div class="ai-pit-box">
+          <div class="ai-header">
+            <span class="ai-title"><span>📡</span> AI Pit Crew Chief</span>
+            <span style="font-size: 9px; color: var(--secondary-accent);">TELEMETRY ACTIVE</span>
+          </div>
+          <div class="ai-body" id="ai-pit-text">
+            All 4,900 structural beams nominal. Tire pressures calibrated at 32 PSI. Grip balance ready.
+          </div>
+        </div>
+      </div>
+
+      <!-- Center: 9,000 RPM Tachometer & Speedometer Pod -->
+      <div class="gauge-pod">
+        <svg class="gauge-svg" viewBox="0 0 200 200">
+          <circle class="gauge-track" cx="100" cy="100" r="90" stroke-dasharray="565" stroke-dashoffset="141" />
+          <circle class="gauge-progress" id="gauge-progress-circle" cx="100" cy="100" r="90" />
+        </svg>
+
+        <div class="gauge-center-readout">
+          <div class="gear-display" id="gear-val">1</div>
+          <div class="speed-display" id="speed-val">0</div>
+          <div class="speed-unit">KM/H</div>
+
+          <div class="rpm-bar-container">
+            <div class="rpm-fill" id="rpm-fill"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Tire Pressure & Thermal Pod -->
+      <div class="tire-pod">
+        <div class="tire-cell" id="tire-fl">
+          <div class="tire-label">FL</div>
+          <div class="tire-val">32 PSI</div>
+        </div>
+        <div class="tire-cell" id="tire-fr">
+          <div class="tire-label">FR</div>
+          <div class="tire-val">32 PSI</div>
+        </div>
+        <div class="tire-cell" id="tire-rl">
+          <div class="tire-label">RL</div>
+          <div class="tire-val">32 PSI</div>
+        </div>
+        <div class="tire-cell" id="tire-rr">
+          <div class="tire-label">RR</div>
+          <div class="tire-val">32 PSI</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Touch Controls HUD -->
+  <div id="mobile-touch-hud">
+    <!-- Virtual Steering Wheel (Bottom Left) -->
+    <div class="touch-wheel-container">
+      <div class="virtual-wheel" id="virtual-wheel">
+        <div class="wheel-spoke" style="transform: rotate(0deg);"></div>
+        <div class="wheel-spoke" style="transform: rotate(90deg);"></div>
+        <div class="wheel-center-badge"></div>
+      </div>
+    </div>
+
+    <!-- Analog Pedals (Bottom Right) -->
+    <div class="touch-pedals-container">
+      <div class="pedal-btn pedal-brake" id="pedal-brake">
+        <span>🛑</span>
+        <span>BRAKE</span>
+      </div>
+      <div class="pedal-btn" id="pedal-throttle">
+        <span>⚡</span>
+        <span>GAS</span>
+      </div>
+    </div>
+
+    <!-- Mobile Quick Hotkeys -->
+    <div class="mobile-hotkeys">
+      <div class="mobile-hotkey-btn" id="btn-mobile-handbrake">P</div>
+      <div class="mobile-hotkey-btn" id="btn-mobile-nitrous">NOS</div>
+      <div class="mobile-hotkey-btn" id="btn-mobile-cam">CAM</div>
+      <div class="mobile-hotkey-btn" id="btn-mobile-reset">R</div>
+      <div class="mobile-hotkey-btn" id="btn-mobile-slowmo">SLOW</div>
+      <div class="mobile-hotkey-btn" id="btn-mobile-menu">MENU</div>
+    </div>
+  </div>
+
+  <!-- Pause Menu & Settings Modal Drawer (ESC) -->
+  <div class="drawer-overlay" id="drawer-overlay">
+    <div class="drawer-modal">
+      <div class="drawer-header">
+        <div class="drawer-title" id="drawer-main-title">Simulation Manager</div>
+        <button class="hud-btn" id="drawer-close-btn">✕ Close</button>
+      </div>
+
+      <div class="drawer-tabs">
+        <button class="tab-btn active" data-tab="vehicles">Vehicles</button>
+        <button class="tab-btn" data-tab="environments">Maps</button>
+        <button class="tab-btn" data-tab="weather">Weather & Time</button>
+        <button class="tab-btn" data-tab="graphics">Graphics Settings</button>
+        <button class="tab-btn" data-tab="replay">Replay Manager</button>
+        <button class="tab-btn" data-tab="tuning">Live Tuning</button>
+        <button class="tab-btn" data-tab="controls">Controls Guide</button>
+      </div>
+
+      <div class="drawer-content" id="drawer-content-body">
+        <!-- Injected via SimulationUI -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Main ES Module Entry Point -->
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
